@@ -675,22 +675,22 @@ func (client *memdClient) Bootstrap(cancelSig <-chan struct{}, settings bootstra
 
 	if errMapCh != nil {
 		errMapResp := <-errMapCh
-		if errMapResp.Err == nil {
-			settings.ErrMapManager.StoreErrorMap(errMapResp.Bytes)
-		} else {
+		if errMapResp.Err != nil {
 			logDebugf("Memdclient `%s/%p` Failed to fetch kv error map (%s)", client.Address(), client, errMapResp.Err)
+			return errMapResp.Err
 		}
+		settings.ErrMapManager.StoreErrorMap(errMapResp.Bytes)
 	}
 
 	var serverAuthMechanisms []AuthMechanism
 	if listMechsCh != nil {
 		listMechsResp := <-listMechsCh
-		if listMechsResp.Err == nil {
-			serverAuthMechanisms = listMechsResp.Mechs
-			logDebugf("Memdclient `%s/%p` Server supported auth mechanisms: %v", client.Address(), client, serverAuthMechanisms)
-		} else {
+		if listMechsResp.Err != nil {
 			logDebugf("Memdclient `%s/%p` Failed to fetch auth mechs from server (%v)", client.Address(), client, listMechsResp.Err)
+			return listMechsResp.Err
 		}
+		logDebugf("Memdclient `%s/%p` Server supported auth mechanisms: %v", client.Address(), client, serverAuthMechanisms)
+		serverAuthMechanisms = listMechsResp.Mechs
 	}
 
 	// If completedAuthCh isn't nil then we have attempted to do auth so we need to wait on the result of that.
